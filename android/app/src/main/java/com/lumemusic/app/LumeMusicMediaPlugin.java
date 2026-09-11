@@ -13,17 +13,28 @@ import androidx.media3.session.SessionToken;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
-import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.PluginMethod;
+import com.getcapacitor.annotation.CapacitorPlugin;
 import com.google.common.util.concurrent.ListenableFuture;
 
 @UnstableApi
 @CapacitorPlugin(name = "LumeMusicMedia")
 public class LumeMusicMediaPlugin extends Plugin {
 
+    private static LumeMusicMediaPlugin instance;
+
     private MediaController controller;
     private ListenableFuture<MediaController> controllerFuture;
 
+    @Override
+    public void load() {
+        super.load();
+        instance = this;
+    }
+
+    /*
+     * Connect to the native Media3 playback service.
+     */
     private void connectController(
             @NonNull PluginCall call,
             @NonNull Runnable action
@@ -34,6 +45,13 @@ public class LumeMusicMediaPlugin extends Plugin {
         }
 
         Context context = getContext();
+
+        if (context == null) {
+            call.reject(
+                    "LumeMusic context is unavailable"
+            );
+            return;
+        }
 
         SessionToken token = new SessionToken(
                 context,
@@ -69,6 +87,9 @@ public class LumeMusicMediaPlugin extends Plugin {
         }, getActivity().getMainExecutor());
     }
 
+    /*
+     * Start native Media3 playback.
+     */
     @PluginMethod
     public void play(PluginCall call) {
         String url = call.getString("url");
@@ -110,6 +131,9 @@ public class LumeMusicMediaPlugin extends Plugin {
         });
     }
 
+    /*
+     * Pause native Media3 playback.
+     */
     @PluginMethod
     public void pause(PluginCall call) {
         if (controller != null) {
@@ -119,6 +143,9 @@ public class LumeMusicMediaPlugin extends Plugin {
         call.resolve();
     }
 
+    /*
+     * Resume native Media3 playback.
+     */
     @PluginMethod
     public void resume(PluginCall call) {
         if (controller != null) {
@@ -128,6 +155,68 @@ public class LumeMusicMediaPlugin extends Plugin {
         call.resolve();
     }
 
+    /*
+     * Resume native Media3 playback from Java.
+     */
+    public static void resumePlayback() {
+        if (instance != null && instance.controller != null) {
+            instance.controller.play();
+        }
+    }
+
+    /*
+     * Show the native AdMob fullscreen interstitial.
+     */
+    @PluginMethod
+    public void showInterstitial(PluginCall call) {
+
+        if (getActivity() == null) {
+            call.reject(
+                    "LumeMusic activity is no longer available"
+            );
+            return;
+        }
+
+        getActivity().runOnUiThread(() -> {
+
+            try {
+
+                LumeMusicInterstitial.show(
+                        getActivity()
+                );
+
+                call.resolve();
+
+            } catch (Exception e) {
+
+                call.reject(
+                        "Unable to show LumeMusic interstitial",
+                        e
+                );
+            }
+        });
+    }
+
+    /*
+     * Check whether the native AdMob interstitial
+     * is currently loaded and ready to show.
+     */
+    @PluginMethod
+    public void isReady(PluginCall call) {
+
+        JSObject result = new JSObject();
+
+        result.put(
+                "ready",
+                LumeMusicInterstitial.isReady()
+        );
+
+        call.resolve(result);
+    }
+
+    /*
+     * Stop native Media3 playback.
+     */
     @PluginMethod
     public void stop(PluginCall call) {
         if (controller != null) {
@@ -137,8 +226,12 @@ public class LumeMusicMediaPlugin extends Plugin {
         call.resolve();
     }
 
+    /*
+     * Check whether native Media3 playback is active.
+     */
     @PluginMethod
     public void isPlaying(PluginCall call) {
+
         JSObject result = new JSObject();
 
         result.put(
@@ -150,29 +243,55 @@ public class LumeMusicMediaPlugin extends Plugin {
         call.resolve(result);
     }
 
+    /*
+     * Return the current native Media3 playback state.
+     */
     @PluginMethod
     public void getState(PluginCall call) {
+
         JSObject result = new JSObject();
 
         if (controller == null) {
-            result.put("connected", false);
-            result.put("playing", false);
-            result.put("position", 0);
-            result.put("duration", 0);
+
+            result.put(
+                    "connected",
+                    false
+            );
+
+            result.put(
+                    "playing",
+                    false
+            );
+
+            result.put(
+                    "position",
+                    0
+            );
+
+            result.put(
+                    "duration",
+                    0
+            );
 
             call.resolve(result);
             return;
         }
 
-        result.put("connected", true);
+        result.put(
+                "connected",
+                true
+        );
+
         result.put(
                 "playing",
                 controller.isPlaying()
         );
+
         result.put(
                 "position",
                 controller.getCurrentPosition()
         );
+
         result.put(
                 "duration",
                 controller.getDuration()
@@ -182,10 +301,12 @@ public class LumeMusicMediaPlugin extends Plugin {
                 controller.getCurrentMediaItem();
 
         if (currentItem != null) {
+
             MediaMetadata metadata =
                     currentItem.mediaMetadata;
 
             if (metadata.title != null) {
+
                 result.put(
                         "title",
                         metadata.title.toString()
@@ -193,6 +314,7 @@ public class LumeMusicMediaPlugin extends Plugin {
             }
 
             if (metadata.artist != null) {
+
                 result.put(
                         "artist",
                         metadata.artist.toString()
@@ -203,41 +325,65 @@ public class LumeMusicMediaPlugin extends Plugin {
         call.resolve(result);
     }
 
+    /*
+     * Seek native Media3 playback.
+     *
+     * Position is supplied in milliseconds.
+     */
     @PluginMethod
     public void seekTo(PluginCall call) {
+
         if (controller == null) {
+
             call.reject(
                     "Media controller is not connected"
             );
+
             return;
         }
 
-        Double position = call.getDouble("position");
+        Double position =
+                call.getDouble("position");
 
         if (position == null) {
+
             call.reject(
                     "Position is required"
             );
+
             return;
         }
 
         controller.seekTo(
-                Math.max(0L, position.longValue())
+                Math.max(
+                        0L,
+                        position.longValue()
+                )
         );
 
         call.resolve();
     }
 
+    /*
+     * Clean up the native Media3 controller.
+     */
     @Override
     protected void handleOnDestroy() {
+
         if (controller != null) {
+
             controller.release();
             controller = null;
         }
 
         if (controllerFuture != null) {
+
             controllerFuture.cancel(false);
             controllerFuture = null;
+        }
+
+        if (instance == this) {
+            instance = null;
         }
 
         super.handleOnDestroy();
