@@ -3,7 +3,7 @@ package com.lumemusic.app;
 import android.content.ComponentName;
 import android.content.Context;
 
-import androidx.annotation.Nullable;
+import androidx.annotation.NonNull;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.MediaMetadata;
 import androidx.media3.common.util.UnstableApi;
@@ -14,8 +14,7 @@ import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.annotation.CapacitorPlugin;
-import com.getcapacitor.PluginMethod;
-
+import com.getcapacitor.annotation.PluginMethod;
 import com.google.common.util.concurrent.ListenableFuture;
 
 @UnstableApi
@@ -25,26 +24,47 @@ public class LumeMusicMediaPlugin extends Plugin {
     private MediaController controller;
     private ListenableFuture<MediaController> controllerFuture;
 
-    private void connectController() {
+    private void connectController(
+            @NonNull PluginCall call,
+            @NonNull Runnable action
+    ) {
         if (controller != null) {
+            action.run();
             return;
         }
 
         Context context = getContext();
 
-        SessionToken sessionToken = new SessionToken(
+        SessionToken token = new SessionToken(
                 context,
-                new ComponentName(context, PlaybackService.class)
+                new ComponentName(
+                        context,
+                        PlaybackService.class
+                )
         );
 
-        controllerFuture = new MediaController.Builder(context, sessionToken)
-                .buildAsync();
+        controllerFuture = new MediaController.Builder(
+                context,
+                token
+        ).buildAsync();
 
         controllerFuture.addListener(() -> {
             try {
                 controller = controllerFuture.get();
+
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(action);
+                } else {
+                    call.reject(
+                            "LumeMusic activity is no longer available"
+                    );
+                }
+
             } catch (Exception e) {
-                controller = null;
+                call.reject(
+                        "Unable to connect to LumeMusic Media3 service",
+                        e
+                );
             }
         }, getActivity().getMainExecutor());
     }
@@ -58,56 +78,62 @@ public class LumeMusicMediaPlugin extends Plugin {
             return;
         }
 
-        connectController();
+        String title = call.getString(
+                "title",
+                "LumeMusic"
+        );
 
-        if (controller == null) {
-            call.reject("Media controller is not ready");
-            return;
+        String artist = call.getString(
+                "artist",
+                "LumeMusic"
+        );
+
+        connectController(call, () -> {
+
+            MediaMetadata metadata =
+                    new MediaMetadata.Builder()
+                            .setTitle(title)
+                            .setArtist(artist)
+                            .build();
+
+            MediaItem item =
+                    new MediaItem.Builder()
+                            .setUri(url.trim())
+                            .setMediaMetadata(metadata)
+                            .build();
+
+            controller.setMediaItem(item);
+            controller.prepare();
+            controller.play();
+
+            call.resolve();
+        });
+    }
+
+    @PluginMethod
+    public void pause(PluginCall call) {
+        if (controller != null) {
+            controller.pause();
         }
-
-        String title = call.getString("title", "LumeMusic");
-        String artist = call.getString("artist", "LumeMusic");
-
-        MediaMetadata metadata = new MediaMetadata.Builder()
-                .setTitle(title)
-                .setArtist(artist)
-                .build();
-
-        MediaItem item = new MediaItem.Builder()
-                .setUri(url)
-                .setMediaMetadata(metadata)
-                .build();
-
-        controller.setMediaItem(item);
-        controller.prepare();
-        controller.play();
 
         call.resolve();
     }
 
     @PluginMethod
-    public void pause(PluginCall call) {
-        connectController();
-
-        if (controller == null) {
-            call.reject("Media controller is not ready");
-            return;
+    public void resume(PluginCall call) {
+        if (controller != null) {
+            controller.play();
         }
 
-        controller.pause();
         call.resolve();
     }
 
     @PluginMethod
     public void stop(PluginCall call) {
-        connectController();
-
-        if (controller == null) {
-            call.reject("Media controller is not ready");
-            return;
+        if (controller != null) {
+            controller.stop();
         }
 
-        controller.stop();
         call.resolve();
     }
 
@@ -117,10 +143,89 @@ public class LumeMusicMediaPlugin extends Plugin {
 
         result.put(
                 "playing",
-                controller != null && controller.isPlaying()
+                controller != null &&
+                controller.isPlaying()
         );
 
         call.resolve(result);
+    }
+
+    @PluginMethod
+    public void getState(PluginCall call) {
+        JSObject result = new JSObject();
+
+        if (controller == null) {
+            result.put("connected", false);
+            result.put("playing", false);
+            result.put("position", 0);
+            result.put("duration", 0);
+
+            call.resolve(result);
+            return;
+        }
+
+        result.put("connected", true);
+        result.put(
+                "playing",
+                controller.isPlaying()
+        );
+        result.put(
+                "position",
+                controller.getCurrentPosition()
+        );
+        result.put(
+                "duration",
+                controller.getDuration()
+        );
+
+        MediaItem currentItem =
+                controller.getCurrentMediaItem();
+
+        if (currentItem != null) {
+            MediaMetadata metadata =
+                    currentItem.mediaMetadata;
+
+            if (metadata.title != null) {
+                result.put(
+                        "title",
+                        metadata.title.toString()
+                );
+            }
+
+            if (metadata.artist != null) {
+                result.put(
+                        "artist",
+                        metadata.artist.toString()
+                );
+            }
+        }
+
+        call.resolve(result);
+    }
+
+    @PluginMethod
+    public void seekTo(PluginCall call) {
+        if (controller == null) {
+            call.reject(
+                    "Media controller is not connected"
+            );
+            return;
+        }
+
+        Double position = call.getDouble("position");
+
+        if (position == null) {
+            call.reject(
+                    "Position is required"
+            );
+            return;
+        }
+
+        controller.seekTo(
+                Math.max(0L, position.longValue())
+        );
+
+        call.resolve();
     }
 
     @Override
