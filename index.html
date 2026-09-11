@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0a0a0f" />
+  <title>LumeMusic</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body class="intro-active">
+  <!-- LumeMusic startup intro: stays visible for 2.5 seconds, then fades into the app. -->
+  <div class="lume-intro" id="lumeIntro" aria-label="LumeMusic loading" role="status">
+    <div class="intro-logo" aria-hidden="true">
+      <span class="intro-logo-icon">✦</span>
+      <span class="intro-logo-text">LumeMusic</span>
+    </div>
+    <div class="intro-loader" aria-hidden="true">
+      <span></span><span></span><span></span>
+    </div>
+  </div>
+
+  <div class="app">
+    <div class="fixed-top" id="fixedTop">
+      <header class="header">
+        <div class="logo">
+          <span class="logo-icon">✦</span>
+          <span class="logo-text">LumeMusic</span>
+        </div>
+        <div class="search-box">
+          <input type="text" id="searchInput" placeholder="Search songs, artists, albums..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+          <button id="searchBtn" aria-label="Search">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.35-4.35"></path>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <section class="player-section" id="playerSection">
+        <div class="player-wrapper" id="playerWrapper">
+          <div id="player"></div>
+          <div class="player-placeholder" id="playerPlaceholder">
+            <div class="lume-loader">
+              <span class="loader-diamond">✦</span>
+              <span class="loader-text">LumeMusic</span>
+            </div>
+          </div>
+          <div class="player-loading hidden" id="playerLoading">
+            <div class="lume-loader">
+              <span class="loader-diamond">✦</span>
+              <span class="loader-text">LumeMusic</span>
+            </div>
+          </div>
+          <div class="player-shield" id="playerShield"></div>
+          <div class="player-topbar" id="playerTopbar">
+            <div class="topbar-title" id="topbarTitle">Select a song</div>
+            <div class="topbar-channel" id="topbarChannel">LumeMusic</div>
+          </div>
+          <div class="custom-controls" id="customControls">
+            <div class="progress-container">
+              <span class="time" id="currentTime">0:00</span>
+              <div class="progress-bar" id="progressBar">
+                <div class="progress-filled" id="progressFilled"></div>
+                <div class="progress-handle" id="progressHandle"></div>
+              </div>
+              <span class="time" id="duration">0:00</span>
+            </div>
+            <div class="controls-row">
+              <button class="ctrl-btn" id="playPauseBtn" type="button">
+                <svg id="iconPlay" width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                <svg id="iconPause" width="28" height="28" viewBox="0 0 24 24" fill="currentColor" class="hidden"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+              </button>
+              <button class="ctrl-btn" id="muteBtn" type="button">
+                <svg id="iconVolume" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                </svg>
+                <svg id="iconMuted" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="hidden">
+                  <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
+                </svg>
+              </button>
+              <div class="speed-control">
+                <button class="ctrl-btn speed-btn" id="speedBtn" type="button">1x</button>
+                <div class="speed-menu" id="speedMenu">
+                  <button type="button" data-speed="0.5">0.5x</button>
+                  <button type="button" data-speed="0.75">0.75x</button>
+                  <button type="button" data-speed="1" class="active">1x</button>
+                  <button type="button" data-speed="1.25">1.25x</button>
+                  <button type="button" data-speed="1.5">1.5x</button>
+                  <button type="button" data-speed="2">2x</button>
+                </div>
+              </div>
+              <button class="ctrl-btn" id="fullscreenBtn" type="button">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="now-playing">
+          <h2 id="nowTitle">Select a song to play</h2>
+          <p id="nowChannel">LumeMusic</p>
+          <button class="about-btn hidden" id="aboutBtn" type="button">See more About</button>
+        </div>
+      </section>
+
+      <!-- Fixed tabs: Latest | Trending -->
+      <div class="section-bar" id="sectionBar">
+        <div class="tab-group">
+          <button class="tab-btn" id="tabLatest" type="button">
+            <svg class="tab-icon" width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <defs>
+                <linearGradient id="latestGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#7c5cff"/>
+                  <stop offset="50%" stop-color="#a78bfa"/>
+                  <stop offset="100%" stop-color="#22d3ee"/>
+                </linearGradient>
+              </defs>
+              <circle cx="12" cy="12" r="9" stroke="url(#latestGrad)" stroke-width="2" fill="none"/>
+              <path d="M12 7v5l3.5 2" stroke="url(#latestGrad)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="12" cy="12" r="1.5" fill="url(#latestGrad)"/>
+            </svg>
+            <span>Latest</span>
+          </button>
+          <button class="tab-btn active" id="tabTrending" type="button">
+            <svg class="tab-icon" width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M4 19V12M9 19V8M14 19v-5M19 19V5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+            </svg>
+            <span>Trending</span>
+          </button>
+        </div>
+        <button class="refresh-btn" id="refreshBtn" type="button">↻</button>
+        <button class="back-btn hidden" id="backToTrending" type="button">← Back</button>
+      </div>
+    </div>
+
+    <div class="scroll-area" id="scrollArea">
+      <div class="video-grid" id="mainGrid">
+        <div class="grid-loading" id="gridLoading">
+          <div class="lume-loader">
+            <span class="loader-diamond">✦</span>
+            <span class="loader-text">LumeMusic</span>
+          </div>
+        </div>
+      </div>
+      <footer class="footer"><p>LumeMusic</p></footer>
+    </div>
+  </div>
+
+  <div class="modal-overlay hidden" id="aboutModal" aria-hidden="true">
+    <div class="modal about-modal" role="dialog" aria-modal="true" aria-labelledby="aboutModalTitle">
+      <div class="modal-header">
+        <h3 id="aboutModalTitle">About</h3>
+        <button class="modal-close" id="modalClose" type="button" aria-label="Close About">✕</button>
+      </div>
+      <div class="modal-body" id="modalBody"><div class="modal-loading">Loading...</div></div>
+    </div>
+  </div>
+
+  <div class="modal-overlay hidden" id="artistModal" aria-hidden="true">
+    <div class="modal artist-profile" role="dialog" aria-modal="true" aria-labelledby="artistModalTitle">
+      <div class="modal-header">
+        <h3 id="artistModalTitle">Artist</h3>
+        <button class="modal-close" type="button" data-modal-close="artistModal" aria-label="Close artist profile"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div>
+      <div class="modal-body" id="artistModalBody"></div>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

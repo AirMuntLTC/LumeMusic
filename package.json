@@ -1,0 +1,18 @@
+{
+  "name": "lumemusic",
+  "version": "1.0.0",
+  "description": "LumeMusic is a custom music UI that uses the official YouTube Data API for metadata and the official YouTube IFrame Player API for playback.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@capacitor/android": "^8.5.1",
+    "@capacitor/cli": "^8.5.1",
+    "@capacitor/core": "^8.5.1"
+  }
+}
